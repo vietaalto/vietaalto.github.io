@@ -138,6 +138,7 @@ paginate: 5
 
 kramdown:
   input: GFM
+theme : slate
 
 # Default YAML values (more information on Jekyll's site)
 defaults:
