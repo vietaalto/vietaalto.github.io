@@ -42,7 +42,8 @@
 /* Body
 ---------------------------------------------------------------------- */
 body {
-	background: #0e1015;
+	/*background: #0e1015;*/
+	background: #FFFFFF;
 	font: 15px/30px "merriweather-regular", serif;
 	font-weight: normal;
 	color: #575859;
