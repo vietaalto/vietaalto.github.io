@@ -1,240 +1,138 @@
-/*-----------------------------------------------------------------------------------
-/*
-/* Main JS
-/*
------------------------------------------------------------------------------------*/  
+// Dean Attali / Beautiful Jekyll 2016
 
-(function($) {
+var main = {
 
-	/*---------------------------------------------------- */
-	/* Preloader
-	------------------------------------------------------ */ 
-  	$(window).load(function() {
+  bigImgEl : null,
+  numImgs : null,
 
-   	// will first fade out the loading animation 
-    	$("#status").fadeOut("slow"); 
+  init : function() {
+    // Shorten the navbar after scrolling a little bit down
+    $(window).scroll(function() {
+        if ($(".navbar").offset().top > 50) {
+            $(".navbar").addClass("top-nav-short");
+        } else {
+            $(".navbar").removeClass("top-nav-short");
+        }
+    });
+    
+    // On mobile, hide the avatar when expanding the navbar menu
+    $('#main-navbar').on('show.bs.collapse', function () {
+      $(".navbar").addClass("top-nav-expanded");
+    });
+    $('#main-navbar').on('hidden.bs.collapse', function () {
+      $(".navbar").removeClass("top-nav-expanded");
+    });
+	
+    // On mobile, when clicking on a multi-level navbar menu, show the child links
+    $('#main-navbar').on("click", ".navlinks-parent", function(e) {
+      var target = e.target;
+      $.each($(".navlinks-parent"), function(key, value) {
+        if (value == target) {
+          $(value).parent().toggleClass("show-children");
+        } else {
+          $(value).parent().removeClass("show-children");
+        }
+      });
+    });
+    
+    // Ensure nested navbar menus are not longer than the menu header
+    var menus = $(".navlinks-container");
+    if (menus.length > 0) {
+      var navbar = $("#main-navbar ul");
+      var fakeMenuHtml = "<li class='fake-menu' style='display:none;'><a></a></li>";
+      navbar.append(fakeMenuHtml);
+      var fakeMenu = $(".fake-menu");
 
-    	// will fade out the whole DIV that covers the website. 
-    	$("#preloader").delay(500).fadeOut("slow").remove();      
-
-  	}) 
-
-  	/*----------------------------------------------------*/
-  	/* Backstretch
-  	/*----------------------------------------------------*/
-
-  	if($("html").hasClass('ie8')) {
-  		$("#hero").backstretch("images/hero-bg.jpg");  	
-  		$("#page-title").backstretch("images/hero-bg.jpg");	
-  	} 
-
-   /*----------------------------------------------------*/
-  	/* FitText Settings
-  	------------------------------------------------------ */
-  	setTimeout(function() {
-
-   	$('#page-title h1').fitText(1, { minFontSize: '38px', maxFontSize: '54px' });
-
-  	}, 100);
-
-
-	/*----------------------------------------------------*/
-	/* Adjust Primary Navigation Background Opacity
-	------------------------------------------------------*/
-   $(window).on('scroll', function() {
-
-		var h = $('header').height();
-		var y = $(window).scrollTop();
-      var header = $('#main-header');
-
-	   if ((y > h + 30 ) && ($(window).outerWidth() > 768 ) ) {
-	      header.addClass('opaque');
-	   }
-      else {
-         if (y < h + 30) {
-            header.removeClass('opaque');
-         }
-         else {
-            header.addClass('opaque');
-         }
-      }
-
-	});
-
-   /*-----------------------------------------------------*/
-	/* Alert Boxes
-  	-------------------------------------------------------*/
-	$('.alert-box').on('click', '.close', function() {
-	  $(this).parent().fadeOut(500);
-	});	
-
-
-   /*-----------------------------------------------------*/
-  	/* Mobile Menu
-   ------------------------------------------------------ */  
-   var menu_icon = $("<span class='menu-icon'></span>");
-  	var toggle_button = $("<a>", {                         
-                        id: "toggle-btn", 
-                        html : "<span class='menu-text'>Menu</span>",
-                        title: "Menu",
-                        href : "#" } 
-                        );
-  	var nav_wrap = $('nav#nav-wrap')
-  	var nav = $("ul#nav");  
-   
-   /* if JS is enabled, remove the two a.mobile-btns 
-  	and dynamically prepend a.toggle-btn to #nav-wrap */
-  	nav_wrap.find('a.mobile-btn').remove(); 
-  	toggle_button.append(menu_icon); 
-   nav_wrap.prepend(toggle_button); 
-
-  	toggle_button.on("click", function(e) {
-   	e.preventDefault();
-    	nav.slideToggle("fast");     
-  	});
-
-  	if (toggle_button.is(':visible')) nav.addClass('mobile');
-  	$(window).resize(function() {
-   	if (toggle_button.is(':visible')) nav.addClass('mobile');
-    	else nav.removeClass('mobile');
-  	});
-
-  	$('ul#nav li a').on("click", function() {      
-   	if (nav.hasClass('mobile')) nav.fadeOut('fast');      
-  	});
-
-
-  	/*----------------------------------------------------*/
-  	/* Smooth Scrolling
-  	------------------------------------------------------ */
-  	$('.smoothscroll').on('click', function (e) {
-	 	
-	 	e.preventDefault();
-
-   	var target = this.hash,
-    	$target = $(target);
-
-    	$('html, body').stop().animate({
-       	'scrollTop': $target.offset().top
-      }, 800, 'swing', function () {
-      	window.location.hash = target;
+      $.each(menus, function(i) {
+        var parent = $(menus[i]).find(".navlinks-parent");
+        var children = $(menus[i]).find(".navlinks-children a");
+        var words = [];
+        $.each(children, function(idx, el) { words = words.concat($(el).text().trim().split(/\s+/)); });
+        var maxwidth = 0;
+        $.each(words, function(id, word) {
+          fakeMenu.html("<a>" + word + "</a>");
+          var width =  fakeMenu.width();
+          if (width > maxwidth) {
+            maxwidth = width;
+          }
+        });
+        $(menus[i]).css('min-width', maxwidth + 'px')
       });
 
-  	});
+      fakeMenu.remove();
+    }        
+    
+    // show the big header image	
+    main.initImgs();
+  },
+  
+  initImgs : function() {
+    // If the page was large images to randomly select from, choose an image
+    if ($("#header-big-imgs").length > 0) {
+      main.bigImgEl = $("#header-big-imgs");
+      main.numImgs = main.bigImgEl.attr("data-num-img");
 
-
-  	/*----------------------------------------------------*/
-  	/* Highlight the current section in the navigation bar
-  	------------------------------------------------------*/
-	var sections = $("section"),
-	navigation_links = $("#nav-wrap a");
-
-	if($("body").hasClass('homepage')) {
-
-		sections.waypoint( {
-
-	      handler: function(event, direction) {
-
-			   var active_section;
-
-				active_section = $(this);
-				if (direction === "up") active_section = active_section.prev();
-
-				var active_link = $('#nav-wrap a[href="#' + active_section.attr("id") + '"]');
-
-	         navigation_links.parent().removeClass("current");
-				active_link.parent().addClass("current");
-
-			},
-			offset: '25%'
-		});
-
+          // 2fc73a3a967e97599c9763d05e564189
+	  // set an initial image
+	  var imgInfo = main.getImgInfo();
+	  var src = imgInfo.src;
+	  var desc = imgInfo.desc;
+  	  main.setImg(src, desc);
+  	
+	  // For better UX, prefetch the next image so that it will already be loaded when we want to show it
+  	  var getNextImg = function() {
+	    var imgInfo = main.getImgInfo();
+	    var src = imgInfo.src;
+	    var desc = imgInfo.desc;		  
+	    
+		var prefetchImg = new Image();
+  		prefetchImg.src = src;
+		// if I want to do something once the image is ready: `prefetchImg.onload = function(){}`
+		
+  		setTimeout(function(){
+                  var img = $("<div></div>").addClass("big-img-transition").css("background-image", 'url(' + src + ')');
+  		  $(".intro-header.big-img").prepend(img);
+  		  setTimeout(function(){ img.css("opacity", "1"); }, 50);
+		  
+		  // after the animation of fading in the new image is done, prefetch the next one
+  		  //img.one("transitioned webkitTransitionEnd oTransitionEnd MSTransitionEnd", function(){
+		  setTimeout(function() {
+		    main.setImg(src, desc);
+			img.remove();
+  			getNextImg();
+		  }, 1000); 
+  		  //});		
+  		}, 6000);
+  	  };
+	  
+	  // If there are multiple images, cycle through them
+	  if (main.numImgs > 1) {
+  	    getNextImg();
+	  }
+    }
+  },
+  
+  getImgInfo : function() {
+  	var randNum = Math.floor((Math.random() * main.numImgs) + 1);
+    var src = main.bigImgEl.attr("data-img-src-" + randNum);
+	var desc = main.bigImgEl.attr("data-img-desc-" + randNum);
+	
+	return {
+	  src : src,
+	  desc : desc
 	}
+  },
+  
+  setImg : function(src, desc) {
+	$(".intro-header.big-img").css("background-image", 'url(' + src + ')');
+	if (typeof desc !== typeof undefined && desc !== false) {
+	  $(".img-desc").text(desc).show();
+	} else {
+	  $(".img-desc").hide();  
+	}
+  }
+};
 
-   /*----------------------------------------------------*/
-  	/* Flexslider
-  	/*----------------------------------------------------*/
-  	$(window).load(function() {  		
+// 2fc73a3a967e97599c9763d05e564189
 
-	  	$('#hero-slider').flexslider({
-	   	namespace: "flex-",
-	      controlsContainer: ".flex-container",
-	      animation: 'fade',
-	      controlNav: true,
-	      directionNav: false,
-	      smoothHeight: true,
-	      slideshowSpeed: 1000,
-	      animationSpeed: 600,
-	      randomize: false
-	   });	   
-
-   });
-
- 
-	/*----------------------------------------------------*/
-	/*	contact form
-	------------------------------------------------------*/
-
-   $('form#contactForm button.submit').on('click', function() {
-
-      $('#image-loader').fadeIn();
-
-      var contactFname = $('#contactForm #contactFname').val();
-      var contactLname = $('#contactForm #contactLname').val();
-      var contactEmail = $('#contactForm #contactEmail').val();
-      var contactSubject = $('#contactForm #contactSubject').val();
-      var contactMessage = $('#contactForm #contactMessage').val();
-
-      var data = 'contactFname=' + contactFname  + '&contactLname=' + contactLname + 
-                 '&contactEmail=' + contactEmail + '&contactSubject=' + contactSubject + 
-                 '&contactMessage=' + contactMessage;
-
-      $.ajax({
-
-	      type: "POST",
-	      url: "inc/sendEmail.php",
-	      data: data,
-	      success: function(msg) {
-
-            // Message was sent
-            if (msg == 'OK') {
-               $('#image-loader').fadeOut();
-               $('#message-warning').hide();
-               $('#contactForm').fadeOut();
-               $('#message-success').fadeIn();   
-            }
-            // There was an error
-            else {
-               $('#image-loader').fadeOut();
-               $('#message-warning').html(msg);
-	            $('#message-warning').fadeIn();
-            }
-
-	      }
-
-      });
-      return false;
-   });
-
-
-	/*-----------------------------------------------------*/
-  	/* Back to top
-   ------------------------------------------------------ */ 
-	var pxShow = 300; // height on which the button will show
-	var fadeInTime = 400; // how slow/fast you want the button to show
-	var fadeOutTime = 400; // how slow/fast you want the button to hide
-	var scrollSpeed = 300; // how slow/fast you want the button to scroll to top. can be a value, 'slow', 'normal' or 'fast'
-
-   // Show or hide the sticky footer button
-	jQuery(window).scroll(function() {
-
-		if (jQuery(window).scrollTop() >= pxShow) {
-			jQuery("#go-top").fadeIn(fadeInTime);
-		} else {
-			jQuery("#go-top").fadeOut(fadeOutTime);
-		}
-
-	}); 
-
-
-})(jQuery);
+document.addEventListener('DOMContentLoaded', main.init);
